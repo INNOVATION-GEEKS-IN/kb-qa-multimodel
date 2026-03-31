@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KB Q&A — Multi-Model</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f6f6f2;
+      --surface:   #ffffff;
+      --border:    #e4e4dc;
+      --text:      #1a1a1a;
+      --muted:     #888880;
+      --accent:    #2d6a4f;
+      --accent-lt: #eaf4ef;
+      --radius:    10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 1rem;
+    }
+
+    .brand { display: flex; align-items: center; gap: 8px; }
+    .brand h1 { font-size: 16px; font-weight: 600; }
+    .brand span { font-size: 11px; color: var(--muted); background: var(--bg); padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border); }
+
+    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .doc-pills { display: flex; gap: 5px; flex-wrap: wrap; }
+    .doc-pill  { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--accent-lt); color: var(--accent); border: 1px solid #b6dfc5; }
+    .no-docs   { font-size: 11px; color: #c0392b; background: #fef3ef; padding: 2px 8px; border-radius: 99px; border: 1px solid #f5c5b0; }
+
+    .reindex-btn {
+      font-size: 12px; padding: 5px 12px; border-radius: 99px;
+      border: 1px solid var(--border); background: var(--surface);
+      cursor: pointer; color: var(--muted); transition: all 0.15s;
+    }
+    .reindex-btn:hover { background: var(--bg); color: var(--text); }
+
+    /* ── LAYOUT ── */
+    .layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR ── */
+    aside {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    aside h2 { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+
+    .model-btn {
+      width: 100%; text-align: left;
+      padding: 9px 12px; border-radius: var(--radius);
+      border: 1px solid transparent;
+      background: transparent; cursor: pointer;
+      margin-bottom: 4px; transition: all 0.15s;
+    }
+    .model-btn:hover { background: var(--bg); }
+    .model-btn.active { background: var(--accent-lt); border-color: #b6dfc5; }
+
+    .model-btn .m-name     { font-size: 13px; font-weight: 500; display: block; }
+    .model-btn .m-provider { font-size: 11px; color: var(--muted); display: block; margin-top: 1px; }
+    .model-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+
+    .sidebar-divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+    aside .stat-label { font-size: 11px; color: var(--muted); }
+    aside .stat-val   { font-size: 20px; font-weight: 600; color: var(--text); }
+
+    /* ── CHAT AREA ── */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #chat-window {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .empty-state {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--muted); text-align: center; gap: 8px;
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 4px; }
+    .empty-state p { font-size: 14px; }
+    .suggestions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+    .suggestion-chip {
+      font-size: 12px; padding: 6px 14px; border-radius: 99px;
+      border: 1px solid var(--border); background: var(--surface);
+      cursor: pointer; color: var(--muted); transition: all 0.15s;
+    }
+    .suggestion-chip:hover { background: var(--bg); color: var(--text); }
+
+    /* ── MESSAGES ── */
+    .message { display: flex; gap: 10px; animation: rise 0.2s ease; max-width: 760px; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0; margin-top: 2px;
+    }
+    .message.user .avatar { background: #dde8ff; }
+    .message.bot  .avatar { background: var(--accent-lt); }
+
+    .msg-body { flex: 1; }
+
+    .msg-meta {
+      font-size: 11px; color: var(--muted); margin-bottom: 4px;
+      display: flex; gap: 8px; align-items: center;
+    }
+    .model-badge {
+      display: inline-block; font-size: 10px; padding: 1px 7px;
+      border-radius: 99px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--muted);
+    }
+
+    .bubble {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      font-size: 14px; line-height: 1.7; white-space: pre-wrap;
+    }
+    .message.user .bubble { background: #f0f4ff; border-color: #d5dfff; }
+    .bubble.thinking { color: var(--muted); font-style: italic; }
+
+    .sources {
+      margin-top: 6px; display: flex; gap: 5px; flex-wrap: wrap;
+    }
+    .source-tag {
+      font-size: 11px; padding: 2px 8px; border-radius: 99px;
+      background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+    }
+    .source-tag::before { content: "📄 "; }
+
+    /* ── INPUT ── */
+    .input-area {
+      padding: 1rem 1.5rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .input-row {
+      display: flex; gap: 10px; align-items: flex-end;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+    }
+    .input-row:focus-within { border-color: #aaa; }
+
+    textarea {
+      flex: 1; border: none; outline: none;
+      font-size: 14px; font-family: inherit; resize: none;
+      background: transparent; line-height: 1.5;
+      max-height: 100px; min-height: 22px;
+    }
+
+    #send-btn {
+      width: 36px; height: 36px; border-radius: 8px;
+      border: none; background: var(--accent); color: #fff;
+      cursor: pointer; font-size: 15px; flex-shrink: 0;
+      transition: background 0.15s; display: flex; align-items: center; justify-content: center;
+    }
+    #send-btn:hover    { background: #245a42; }
+    #send-btn:disabled { background: #ccc; cursor: default; }
+
+    .input-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; color: #fff; font-size: 13px;
+      padding: 8px 18px; border-radius: 99px;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>📖 KB Q&A</h1>
+    <span>Multi-Model</span>
+  </div>
+  <div class="header-right">
+    <div class="doc-pills" id="doc-pills">
+      {% if docs %}
+        {% for d in docs %}
+          <span class="doc-pill">{{ d }}</span>
+        {% endfor %}
+      {% else %}
+        <span class="no-docs">No docs in /docs</span>
+      {% endif %}
+    </div>
+    <button class="reindex-btn" onclick="reindex()">↻ Re-index Docs</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar: model selector -->
+  <aside>
+    <h2>Model</h2>
+    {% for m in models %}
+    <button
+      class="model-btn {% if loop.first %}active{% endif %}"
+      data-model="{{ m.id }}"
+      onclick="selectModel(this)"
+    >
+      <span class="model-dot" style="background: {{ m.color }}"></span>
+      <span class="m-name">{{ m.name }}</span>
+      <span class="m-provider">{{ m.provider }}</span>
+    </button>
+    {% endfor %}
+
+    <hr class="sidebar-divider">
+    <div class="stat-label">Indexed chunks</div>
+    <div class="stat-val" id="chunk-count">—</div>
+  </aside>
+
+  <!-- Chat area -->
+  <div class="chat-area">
+    <div id="chat-window">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">💬</div>
+        <p>Ask anything about your product docs</p>
+        <div class="suggestions">
+          <button class="suggestion-chip" onclick="useSuggestion(this)">How does this work?</button>
+          <button class="suggestion-chip" onclick="useSuggestion(this)">What are the key features?</button>
+          <button class="suggestion-chip" onclick="useSuggestion(this)">Give me a quick summary</button>
+          <button class="suggestion-chip" onclick="useSuggestion(this)">How do I get started?</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <textarea
+          id="q-input"
+          placeholder="Ask a question about your docs…"
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button id="send-btn" onclick="sendQuestion()">➤</button>
+      </div>
+      <p class="input-hint">Enter to send · Shift+Enter for new line</p>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  let activeModel = "{{ models[0].id }}";
+
+  // Load chunk count on boot
+  fetch("/docs-status").then(r => r.json()).then(d => {
+    document.getElementById("chunk-count").textContent = d.total_chunks;
+  });
+
+  function selectModel(btn) {
+    document.querySelectorAll(".model-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeModel = btn.dataset.model;
+  }
+
+  function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 100) + "px";
+  }
+
+  function handleKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendQuestion(); }
+  }
+
+  function useSuggestion(btn) {
+    document.getElementById("q-input").value = btn.textContent;
+    sendQuestion();
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2800);
+  }
+
+  function addMessage(role, html, meta = {}) {
+    document.getElementById("empty-state")?.remove();
+    const win = document.getElementById("chat-window");
+    const div = document.createElement("div");
+    div.className = `message ${role}`;
+
+    let metaHtml = "";
+    if (role === "bot" && meta.model) {
+      metaHtml = `<div class="msg-meta">
+        <span class="model-badge">${meta.modelName || meta.model}</span>
+      </div>`;
+    }
+
+    div.innerHTML = `
+      <div class="avatar">${role === "user" ? "🧑" : "🤖"}</div>
+      <div class="msg-body">
+        ${metaHtml}
+        <div class="bubble ${meta.thinking ? "thinking" : ""}">${html}</div>
+        ${meta.sources ? renderSources(meta.sources) : ""}
+      </div>`;
+    win.appendChild(div);
+    win.scrollTop = win.scrollHeight;
+    return div;
+  }
+
+  function renderSources(sources) {
+    if (!sources || sources.length === 0) return "";
+    return `<div class="sources">${sources.map(s =>
+      `<span class="source-tag">${esc(s)}</span>`).join("")}</div>`;
+  }
+
+  function updateBubble(msgEl, text, sources, modelName) {
+    const bubble = msgEl.querySelector(".bubble");
+    bubble.classList.remove("thinking");
+    bubble.textContent = text;
+    const existing = msgEl.querySelector(".sources");
+    if (existing) existing.remove();
+    if (sources && sources.length) {
+      msgEl.querySelector(".msg-body").insertAdjacentHTML("beforeend", renderSources(sources));
+    }
+    const badge = msgEl.querySelector(".model-badge");
+    if (badge) badge.textContent = modelName || activeModel;
+  }
+
+  const MODEL_NAMES = {
+    claude: "Claude (Anthropic)",
+    gemini: "Gemini (Google)",
+    grok:   "Grok (xAI)",
+    groq:   "Groq",
+    ollama: "Ollama (local)",
+  };
+
+  async function sendQuestion() {
+    const input   = document.getElementById("q-input");
+    const sendBtn = document.getElementById("send-btn");
+    const question = input.value.trim();
+    if (!question) return;
+
+    addMessage("user", esc(question));
+    input.value = "";
+    input.style.height = "auto";
+    sendBtn.disabled = true;
+
+    const thinkingEl = addMessage("bot", "Searching docs…", { thinking: true, model: activeModel, modelName: MODEL_NAMES[activeModel] });
+
+    try {
+      const res  = await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, model: activeModel }),
+      });
+      const data = await res.json();
+      updateBubble(thinkingEl, data.answer || data.error, data.sources, MODEL_NAMES[data.model]);
+    } catch (err) {
+      updateBubble(thinkingEl, "Error: Could not reach the server.", [], MODEL_NAMES[activeModel]);
+    }
+
+    sendBtn.disabled = false;
+    input.focus();
+  }
+
+  async function reindex() {
+    showToast("Re-indexing docs…");
+    const res  = await fetch("/index-docs", { method: "POST" });
+    const data = await res.json();
+    showToast(data.message);
+    // Refresh chunk count & doc pills
+    const status = await (await fetch("/docs-status")).json();
+    document.getElementById("chunk-count").textContent = status.total_chunks;
+    const pills = document.getElementById("doc-pills");
+    if (status.docs.length) {
+      pills.innerHTML = status.docs.map(d => `<span class="doc-pill">${esc(d)}</span>`).join("");
+    } else {
+      pills.innerHTML = `<span class="no-docs">No docs in /docs</span>`;
+    }
+  }
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+</script>
+</body>
+</html>

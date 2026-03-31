@@ -1,0 +1,14 @@
+flask>=3.0.0
+python-dotenv>=1.0.0
+
+# Vector DB
+chromadb>=0.5.0
+
+# LLM clients
+anthropic>=0.25.0
+google-generativeai>=0.7.0
+openai>=1.30.0          # used for Grok (OpenAI-compatible)
+groq>=0.9.0
+
+# Ollama uses requests (stdlib-compatible)
+requests>=2.31.0
