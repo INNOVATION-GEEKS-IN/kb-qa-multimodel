@@ -72,8 +72,8 @@ def docs_status():
 
 if __name__ == "__main__":
     os.makedirs("docs", exist_ok=True)
-    print("✅  Multi-Model KB Q&A starting...")
-    print("📂  Add .txt/.md files to docs/ then click 'Re-index Docs' in the UI")
-    print("🌐  Open http://localhost:5000")
-    kb.index_docs()   # auto-index on startup
-    app.run(debug=True)
+    print("Multi-Model KB Q&A starting...")
+    print("Add .txt/.md files to docs/ then click 'Re-index Docs' in the UI")
+    print("Open http://localhost:5000")
+    print(kb.index_docs())   # auto-index on startup
+    app.run(debug=True, host="0.0.0.0", port=5000)
