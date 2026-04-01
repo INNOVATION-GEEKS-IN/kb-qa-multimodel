@@ -12,6 +12,7 @@ Open: http://localhost:5000
 import os
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
 from kb import KnowledgeBase
 from models import get_answer
 
@@ -19,6 +20,7 @@ load_dotenv()
 
 app = Flask(__name__)
 kb = KnowledgeBase(docs_folder="docs")
+ALLOWED_EXTENSIONS = {".txt", ".md"}
 
 
 @app.route("/")
@@ -63,6 +65,43 @@ def ask():
 def index_docs():
     count = kb.index_docs()
     return jsonify({"message": f"Indexed {count} document(s) successfully."})
+
+
+@app.route("/upload-docs", methods=["POST"])
+def upload_docs():
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"error": "No files uploaded."}), 400
+
+    os.makedirs(kb.docs_folder, exist_ok=True)
+    saved_files = []
+    skipped_files = []
+
+    for file in files:
+        filename = secure_filename(file.filename or "")
+        ext = os.path.splitext(filename)[1].lower()
+
+        if not filename:
+            continue
+        if ext not in ALLOWED_EXTENSIONS:
+            skipped_files.append(filename)
+            continue
+
+        target_path = os.path.join(kb.docs_folder, filename)
+        file.save(target_path)
+        saved_files.append(filename)
+
+    if not saved_files:
+        return jsonify({
+            "error": "No supported files uploaded. Only .txt and .md are allowed.",
+            "skipped": skipped_files,
+        }), 400
+
+    return jsonify({
+        "message": f"Uploaded {len(saved_files)} file(s) to docs.",
+        "uploaded": saved_files,
+        "skipped": skipped_files,
+    })
 
 
 @app.route("/docs-status")

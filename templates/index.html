@@ -56,6 +56,16 @@
       cursor: pointer; color: var(--muted); transition: all 0.15s;
     }
     .reindex-btn:hover { background: var(--bg); color: var(--text); }
+    .file-input {
+      font-size: 12px;
+      color: var(--muted);
+      max-width: 220px;
+    }
+    .file-hint {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
 
     /* ── LAYOUT ── */
     .layout {
@@ -228,6 +238,9 @@
         <span class="no-docs">No docs in /docs</span>
       {% endif %}
     </div>
+    <input id="file-input" class="file-input" type="file" multiple accept=".txt,.md" />
+    <span class="file-hint">Tip: hold ⌘ / Ctrl to pick multiple</span>
+    <button class="reindex-btn" onclick="uploadDocs()">Upload</button>
     <button class="reindex-btn" onclick="reindex()">↻ Re-index Docs</button>
   </div>
 </header>
@@ -416,6 +429,38 @@
       pills.innerHTML = status.docs.map(d => `<span class="doc-pill">${esc(d)}</span>`).join("");
     } else {
       pills.innerHTML = `<span class="no-docs">No docs in /docs</span>`;
+    }
+  }
+
+  async function uploadDocs() {
+    const input = document.getElementById("file-input");
+    if (!input.files || input.files.length === 0) {
+      showToast("Choose at least one .txt or .md file.");
+      return;
+    }
+
+    const formData = new FormData();
+    for (const file of input.files) {
+      formData.append("files", file);
+    }
+
+    showToast("Uploading files...");
+    try {
+      const res = await fetch("/upload-docs", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Upload failed.");
+        return;
+      }
+
+      showToast(data.message || "Upload complete.");
+      input.value = "";
+      await reindex();
+    } catch (err) {
+      showToast("Upload failed: could not reach server.");
     }
   }
 

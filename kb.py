@@ -7,7 +7,6 @@ embeds with ChromaDB's default embedder, stores locally.
 
 import os
 import glob
-import hashlib
 import chromadb
 from chromadb.utils import embedding_functions
 
